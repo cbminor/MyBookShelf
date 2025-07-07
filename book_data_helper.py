@@ -2,6 +2,7 @@ import pandas as pd
 from typing import Dict
 import time
 import sys
+from tqdm import tqdm
 from open_library_client import OpenLibraryClient
 from book_details import BookDetails
 
@@ -10,10 +11,10 @@ class BookDataHelper():
 
     def get_book_list_details_by_isbn(self, in_path: str, out_path: str, library_client: OpenLibraryClient):
         """ Given a csv containing a list of ISBN numbers, creates a new csv with all the details available in the OpenLibrary """
-        book_csv = pd.read_csv(in_path)
+        book_csv = pd.read_csv(in_path, dtype={"ISBN": str})
         isbn_list = book_csv["ISBN"].tolist()
         book_list = []
-        for isbn in isbn_list:
+        for isbn in tqdm(isbn_list, desc="Gathering Book Data: "):
             book_list.append(self.get_book_by_isbn(isbn=isbn, library_client=library_client))
             time.sleep(1)
         book_list_df = pd.DataFrame(book_list)
@@ -23,43 +24,52 @@ class BookDataHelper():
             """ Given an ISBN number, calls the OpenLibraryClient to gather all available information about the book, and returns a BookDetails object """
             # Get the book data
             book_data = library_client.get_book_by_isbn(isbn)
-            book_info = self.parse_book_data(book_data)
-            # Pull out the works_key and the author_key
-            works_id = book_info.get("works_key")
-            author_key = book_info.get("authors_key")
-            if works_id:
-                # Call the API to get the works data
-                works = library_client.get_works_info(works_id=works_id)
-                works_info = self.parse_works_data(works)
-                book_info.update(works_info)
-                # Get the ratings data
-                ratings = library_client.get_ratings(works_id=works_id)
-                book_info["rating"] = self.parse_ratings_data(ratings=ratings)
-            else:
-                # If the book does not have works data, set the relevant columns to None
-                book_info["subjects"] = None
-                book_info["description"] = None
-                book_info["rating"] = None
-            if author_key:
-                # Get the information about the author
-                author_data = library_client.get_author(author_id=author_key)
-                book_info["author"] = self.parse_author_data(author_data)
-            else: 
-                # If there is no author data available, set it to None
-                book_info["author"] = None
+            if book_data:
+                book_info = self.parse_book_data(book_data)
+                # Pull out the works_key and the author_key
+                works_id = book_info.get("works_key")
+                author_key = book_info.get("authors_key")
+                if works_id:
+                    # Call the API to get the works data
+                    works = library_client.get_works_info(works_id=works_id)
+                    works_info = self.parse_works_data(works)
+                    book_info.update(works_info)
+                    # Get the ratings data
+                    ratings = library_client.get_ratings(works_id=works_id)
+                    if ratings:
+                        book_info["rating"] = self.parse_ratings_data(ratings=ratings)
+                    else:
+                        book_info["rating"] = None
+                else:
+                    # If the book does not have works data, set the relevant columns to None
+                    book_info["subjects"] = None
+                    book_info["description"] = None
+                    book_info["rating"] = None
+                if author_key:
+                    # Get the information about the author
+                    author_data = library_client.get_author(author_id=author_key)
+                    if author_data:
+                        book_info["author"] = self.parse_author_data(author_data)
+                    else:
+                        book_info["author"] = None
+                else: 
+                    # If there is no author data available, set it to None
+                    book_info["author"] = None
 
-            # Use all the collected information to create the BookDescription object
-            book_description = BookDetails(
-                title = book_info.get("title"),
-                publish_date= book_info.get("publish_date"),
-                publishers = book_info.get("publishers"),
-                pages = book_info.get("pages"),
-                subjects=book_info.get("subjects"),
-                description=book_info.get("description"),
-                rating = book_info.get("rating"),
-                author=book_info.get("author")
-            )
-            return book_description
+                # Use all the collected information to create the BookDescription object
+                book_description = BookDetails(
+                    title = book_info.get("title"),
+                    publish_date= book_info.get("publish_date"),
+                    publishers = book_info.get("publishers"),
+                    pages = book_info.get("pages"),
+                    subjects=book_info.get("subjects"),
+                    description=book_info.get("description"),
+                    rating = book_info.get("rating"),
+                    author=book_info.get("author")
+                )
+                return book_description
+            else:
+                return BookDetails()
 
     def parse_book_data(self, book_data) -> Dict:
         """ Takes the JSON string of book data and converts it to a BookDetails object"""
@@ -88,7 +98,6 @@ class BookDataHelper():
             if type(description_dict) == dict:
                 description = description_dict.get("value")
             else:
-                print(description_dict)
                 description = description_dict
         else:
             description = None

@@ -25,7 +25,8 @@ class OpenLibraryClient:
         if response.status_code == 200:
             return response.json()
         else:
-            raise Exception(f"Error {response.status_code}: {response.text}")
+            return None
+            # raise Exception(f"Error {response.status_code}: {response.text}")
 
     def get_ratings(self, works_id: str) -> int:
         """ Get the average ratings for the works """
@@ -35,7 +36,8 @@ class OpenLibraryClient:
         if response.status_code == 200:
             return response.json()
         else:
-            raise Exception(f"Error {response.status_code}: {response.text}")
+            return None
+            # raise Exception(f"Error {response.status_code}: {response.text}")
     
     def get_author(self, author_id: str) -> int:
         """ Get the average ratings for the works """
@@ -45,7 +47,8 @@ class OpenLibraryClient:
         if response.status_code == 200:
             return response.json()
         else:
-            raise Exception(f"Error {response.status_code}: {response.text}")
+            return None
+            # raise Exception(f"Error {response.status_code}: {response.text}")
         
     def get_book_by_isbn(self, isbn: str) -> BookDetails:
         """ Return s the book details for book with the given ISBN """
@@ -55,4 +58,5 @@ class OpenLibraryClient:
         if response.status_code == 200:
             return response.json()
         else:
-            raise Exception(f"Error {response.status_code}: {response.text}")
+            return None
+            # raise Exception(f"Error {response.status_code}")

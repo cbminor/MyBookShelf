@@ -18,8 +18,8 @@ parser.add_argument("output", help="The name of the result file")
 
 args = parser.parse_args()
 
-APP_NAME = None
-EMAIL_ADDRESS = None
+APP_NAME = "MyBookshelf"
+EMAIL_ADDRESS = "chelsieminor@gmail.com"
 
 if APP_NAME is None:
     APP_NAME = input("Please provide the name of your application: ")
